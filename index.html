@@ -3,79 +3,250 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>18岁的光影与文字</title>
+    <title>18岁 · 拾光记</title>
     <style>
-        /* 基础设置 */
-        body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; margin: 0; padding: 0; background-color: #fafafa; color: #333; line-height: 1.6; }
-        a { text-decoration: none; color: #0066cc; }
-        
-        /* 顶部导航 */
-        header { text-align: center; padding: 40px 20px; background: #fff; border-bottom: 1px solid #eee; }
-        header h1 { margin: 0; font-size: 2rem; letter-spacing: 2px; font-weight: 600; }
-        header p { color: #888; margin-top: 10px; font-size: 1rem; }
+        /* --- 基础与变量 --- */
+        :root {
+            --bg-color: #050505;
+            --text-main: #ffffff;
+            --text-muted: #8b8b99;
+            --accent-gradient: linear-gradient(135deg, #00f2fe 0%, #4facfe 50%, #9d4edd 100%);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
+            background-color: var(--bg-color); 
+            color: var(--text-main); 
+            line-height: 1.7; 
+            overflow-x: hidden;
+        }
+        a { text-decoration: none; color: inherit; transition: 0.3s; }
 
-        /* 容器 */
-        .container { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+        /* 动态背景画布 */
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; }
+
+        /* --- 导航栏 (毛玻璃) --- */
+        nav {
+            position: fixed; top: 0; width: 100%;
+            background: rgba(5, 5, 5, 0.5);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+            z-index: 1000; padding: 20px 0;
+        }
+        nav ul { list-style: none; display: flex; justify-content: center; gap: 40px; }
+        nav a { font-weight: 500; font-size: 0.95rem; color: var(--text-muted); position: relative; }
+        nav a:hover { color: #fff; }
+        nav a::after { /* 悬浮渐变下划线 */
+            content: ''; position: absolute; width: 0; height: 2px; bottom: -5px; left: 0;
+            background: var(--accent-gradient); transition: 0.3s;
+        }
+        nav a:hover::after { width: 100%; }
+
+        /* --- 首屏 Hero --- */
+        header {
+            height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; padding: 0 20px; position: relative;
+        }
+        header h1 { font-size: clamp(2.5rem, 8vw, 4rem); margin-bottom: 15px; letter-spacing: 2px; font-weight: 800; }
+        .gradient-text {
+            background: var(--accent-gradient);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+        header p { color: var(--text-muted); font-size: 1.2rem; margin-top: 10px; letter-spacing: 1px; }
+        
+        /* 打字机光标 */
+        .cursor { display: inline-block; width: 4px; height: 1em; background-color: #4facfe; vertical-align: text-bottom; animation: blink 1s step-end infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* --- 内容容器 --- */
+        .container { max-width: 900px; margin: 0 auto; padding: 60px 20px; position: relative; z-index: 10; }
 
         /* 模块标题 */
-        .section-title { font-size: 1.4rem; border-left: 4px solid #0066cc; padding-left: 10px; margin-bottom: 20px; font-weight: bold; }
+        .section-title {
+            font-size: 2rem; margin-bottom: 40px; font-weight: 700;
+            display: flex; align-items: center; gap: 15px;
+        }
+        .section-title::after {
+            content: ""; flex: 1; height: 1px; 
+            background: linear-gradient(90deg, var(--glass-border) 0%, transparent 100%);
+        }
 
-        /* 作品墙 */
-        .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
-        .gallery-item { background: #e0e0e0; height: 200px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #888; transition: transform 0.3s; }
-        .gallery-item:hover { transform: scale(1.02); }
-        .gallery-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+        /* --- 照片墙 (玻璃质感) --- */
+        .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .gallery-item { 
+            background: var(--glass-bg); height: 240px; border-radius: 16px; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            color: var(--text-muted); border: 1px solid var(--glass-border);
+            position: relative; overflow: hidden;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s;
+            cursor: pointer;
+        }
+        /* 卡片内部的极光光晕 */
+        .gallery-item::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(79,172,254,0.1) 0%, transparent 60%);
+            opacity: 0; transition: 0.4s;
+        }
+        .gallery-item:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.5); border-color: rgba(79,172,254,0.3); }
+        .gallery-item:hover::before { opacity: 1; }
+        .gallery-item span { font-size: 0.9rem; letter-spacing: 1px; z-index: 1; }
 
-        /* 文章列表 */
-        .blog-list { list-style: none; padding: 0; }
-        .blog-list li { background: #fff; padding: 15px 20px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
-        .blog-date { color: #aaa; font-size: 0.9rem; }
+        /* --- 滚动淡入动画 --- */
+        .reveal { opacity: 0; transform: translateY(50px); transition: all 0.8s cubic-bezier(0.5, 0, 0, 1); }
+        .reveal.active { opacity: 1; transform: translateY(0); }
 
         /* 页脚 */
-        footer { text-align: center; padding: 40px 20px; color: #aaa; font-size: 0.9rem; }
+        footer { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 0.9rem; border-top: 1px solid var(--glass-border); margin-top: 100px; position: relative; z-index: 10; }
     </style>
 </head>
 <body>
 
+    <!-- 动态粒子背景 -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- 导航栏 -->
+    <nav>
+        <ul>
+            <li><a href="#about">关于我</a></li>
+            <li><a href="#gallery">光影集</a></li>
+            <li><a href="xiamen.html">厦门之旅</a></li> <!-- 新增的跳转入口 -->
+        </ul>
+    </nav>
+
+    <!-- 首屏 -->
     <header>
-        <h1>18岁 · 拾光记</h1>
+        <h1 class="gradient-text">18岁 · <span id="typewriter"></span><span class="cursor"></span></h1>
         <p>用镜头记录日常，用文字讲述故事</p>
     </header>
 
     <div class="container">
         <!-- 关于我 -->
-        <div class="section-title">关于我</div>
-        <p>你好！我是一个热爱生活、喜欢折腾的高中生。目前正在攒钱买一台趁手的相机（还在纠结买哪款），准备去拍日常的街道、天上的云和身边的碎碎念。这里是我的小天地。</p>
+        <div id="about" class="section-title reveal">关于我</div>
+        <p class="reveal" style="color: var(--text-muted); font-size: 1.1rem; line-height: 2;">
+            你好！我是一个热爱生活、喜欢折腾的高中生。目前正在攒钱买一台趁手的相机（还在纠结买大疆还是影石），准备去拍日常的街道、天上的云和身边的碎碎念。这里是我的小天地，记录着那些稍纵即逝的瞬间。
+        </p>
 
         <!-- 摄影作品 -->
-        <div class="section-title" style="margin-top: 40px;">光影集 (未来会放我的相机作品)</div>
+        <div id="gallery" class="section-title reveal" style="margin-top: 80px;">光影集</div>
         <div class="gallery">
-            <div class="gallery-item">日常 Vlog 封面占位</div>
-            <div class="gallery-item">校园天空占位</div>
-            <div class="gallery-item">航拍视角占位</div>
+            <!-- 这个卡片现在是一个超链接，点击直接跳转到 xiamen.html -->
+            <a href="xiamen.html" class="gallery-item reveal" style="text-decoration: none;">
+                <span style="color: #00f2fe; font-size: 1.2rem; font-weight: bold;">🌊 点击进入：我的厦门之旅</span>
+            </a>
+            <div class="gallery-item reveal"><span>日常 Vlog (待上传)</span></div>
+            <div class="gallery-item reveal"><span>校园天空 (待上传)</span></div>
         </div>
-
-        <!-- 记叙文 / 随笔 -->
-        <div class="section-title" style="margin-top: 40px;">记叙文与碎碎念</div>
-        <ul class="blog-list">
-            <li>
-                <a href="#">高考作文练习：那个夏天的蝉鸣</a>
-                <span class="blog-date">2026-05-12</span>
-            </li>
-            <li>
-                <a href="#">随笔：为什么我不想按套路写议论文</a>
-                <span class="blog-date">2026-04-20</span>
-            </li>
-            <li>
-                <a href="#">攒钱日记：距离我的第一台相机还有多远？</a>
-                <span class="blog-date">2026-03-01</span>
-            </li>
-        </ul>
     </div>
 
     <footer>
-        &copy; 2026 我的个人主页. Made with ❤️.
+        &copy; <span id="year"></span> 我的个人主页. Designed with ❤️.
     </footer>
 
+    <!-- 交互脚本 -->
+    <script>
+        // 1. 打字机特效
+        const text = "拾光记";
+        const typewriterElement = document.getElementById("typewriter");
+        let i = 0;
+        function typeWriter() {
+            if (i < text.length) {
+                typewriterElement.innerHTML += text.charAt(i);
+                i++;
+                setTimeout(typeWriter, 200);
+            }
+        }
+        setTimeout(typeWriter, 500);
+
+        // 2. 自动更新年份
+        document.getElementById("year").textContent = new Date().getFullYear();
+
+        // 3. 平滑滚动
+        document.querySelectorAll('nav a').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                // 如果是页面内锚点（带#），才平滑滚动，如果是跳转网页，就正常跳转
+                if(this.getAttribute('href').startsWith('#')) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // 4. 滚动淡入动画
+        const revealElements = document.querySelectorAll('.reveal');
+        const revealObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                    observer.unobserve(entry.target); 
+                }
+            });
+        }, { threshold: 0.15 });
+        revealElements.forEach(el => revealObserver.observe(el));
+
+        // 5. 粒子星空背景引擎
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.5; 
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.radius = Math.random() * 1.5 + 0.5; 
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.x < 0 || this.x > width) this.vx *= -1;
+                if (this.y < 0 || this.y > height) this.vy *= -1;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(79, 172, 254, 0.4)'; 
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < 60; i++) {
+            particles.push(new Particle());
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            ctx.clearRect(0, 0, width, height);
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 120) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(79, 172, 254, ${0.15 - dist/800})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+        animate();
+    </script>
 </body>
 </html>
